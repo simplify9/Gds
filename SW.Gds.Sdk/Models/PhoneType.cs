@@ -1,4 +1,4 @@
-﻿namespace SW.Gds
+﻿namespace SW.Gds.Model
 {
     public enum PhoneType
     {

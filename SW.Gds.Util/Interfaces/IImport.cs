@@ -10,6 +10,7 @@ namespace SW.Gds.Util
 {
     internal interface IImport
     {
+        string Name {get;}
         Task Import(string path, NpgsqlConnection dbConnection);
     }
 }

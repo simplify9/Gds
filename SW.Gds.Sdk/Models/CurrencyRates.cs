@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace SW.Gds
+namespace SW.Gds.Model
 {
     public class CurrencyRates
     {

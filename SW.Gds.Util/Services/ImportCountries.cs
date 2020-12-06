@@ -1,13 +1,10 @@
 ﻿using CsvHelper;
 using Npgsql;
 using NpgsqlTypes;
-using SW.Gds.Util.Model;
+using SW.Gds.Util.Maps;
 using System;
-using System.Collections.Generic;
-using System.Data.Common;
 using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -15,6 +12,8 @@ namespace SW.Gds.Util.Services
 {
     class ImportCountries : IImport
     {
+        public string Name => "country";
+
         async public Task Import(string path, NpgsqlConnection dbConnection)
         {
             using var fileStream = new FileStream(@"c:\temp\countryInfo.txt", FileMode.Open);
@@ -22,7 +21,7 @@ namespace SW.Gds.Util.Services
             using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
 
             csv.Configuration.Delimiter = "\t";
-            csv.Configuration.RegisterClassMap<CountryMap>();
+            csv.Configuration.RegisterClassMap<Country.Map>();
             csv.Configuration.Encoding = Encoding.UTF8;
             csv.Configuration.HasHeaderRecord = false;
             csv.Configuration.AllowComments = true;

@@ -1,27 +1,26 @@
 ﻿using CsvHelper;
 using Npgsql;
 using NpgsqlTypes;
-using SW.Gds.Util.Model;
-using System;
+using SW.Gds.Model;
+using SW.Gds.Util.Maps;
 using System.Collections.Generic;
-using System.Data.Common;
 using System.Globalization;
 using System.IO;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace SW.Gds.Util.Services
 {
     class ImportPnp : IImport
     {
+        public string Name => "pnp";
+
         async public Task Import(string path, NpgsqlConnection dbConnection)
         {
             using var fileStream = new FileStream(@"c:\temp\E164_PSTN_csv_v2002.csv", FileMode.Open);
             using var reader = new StreamReader(fileStream);
             using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
             csv.Configuration.Delimiter = ";";
-            csv.Configuration.RegisterClassMap<PnpMap>();
+            csv.Configuration.RegisterClassMap<Pnp.Map>();
 
             var records = csv.GetRecordsAsync<Pnp>();
 
