@@ -1,0 +1,101 @@
+name: $(version)
+
+trigger:
+- master
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  imageName: gds
+  version: $[format('1.0.{0}', counter('1.0', 0))]
+
+stages:
+- stage: Build
+  displayName: Build and push image
+
+  jobs:
+    - job: dotnet
+      displayName: build, test and pack nuget
+      steps:
+        - task: VersionDotNetCoreAssemblies@2
+          inputs:
+            Path: '$(Build.SourcesDirectory)'
+            VersionNumber: '$(Build.BuildNumber)'
+            Injectversion: False
+            VersionRegex: '\d+\.\d+\.\d+'
+            FilenamePattern: '.csproj'
+            SDKNames: 'Microsoft.NET.Sdk'
+            OutputVersion: 'OutputedVersion'
+
+        - task: DotNetCoreCLI@2
+          displayName: Build
+          inputs:
+            projects: '**/*.csproj'
+            arguments: '--configuration Release'
+
+        - task: DotNetCoreCLI@2
+          displayName: 'dotnet pack'
+          inputs:
+            command: 'pack'
+            packagesToPack: 'SW.Gds.Sdk/SW.Gds.Sdk.csproj;'
+            configuration: 'Release'
+            nobuild: true
+            versioningScheme: 'byBuildNumber'
+
+        - task: DotNetCoreCLI@2
+          displayName: 'dotnet push'
+          condition: eq(variables['Build.SourceBranch'], 'refs/heads/master')
+          inputs:
+            command: 'push'
+            publishVstsFeed: 'e5fb2e9c-1207-48a4-8f7b-2e6b32308210'
+
+    - job: deploy
+        displayName: build, push image and deploy to playground
+        steps:
+        - task: Docker@2
+          displayName: Build and push an image to container registry
+          condition: eq(variables['Build.SourceBranch'], 'refs/heads/master')
+          inputs:
+            command: buildAndPush
+            repository: $(imageName)
+            dockerfile: '$(Build.SourcesDirectory)/Dockerfile'
+            containerRegistry: simplyworksacr
+            tags: |
+              $(version)
+              latest
+
+        - task: HelmInstaller@0
+          displayName: 'Install Helm 3.2.4'
+          inputs:
+            helmVersion: '3.2.4'
+            checkLatestHelmVersion: false
+            installKubectl: false
+
+        - task: HelmDeploy@0
+          displayName: Helm package
+          inputs:
+            command: package
+            chartPath: chart
+            arguments: --version $(version) --app-version $(version)
+            updatedependency: true
+
+        - task: PublishBuildArtifacts@1
+          inputs:
+            pathToPublish: $(Build.ArtifactStagingDirectory)/$(imageName)-$(version).tgz
+            artifactName: HelmChart
+
+        - task: HelmDeploy@0
+          displayName: 'helm upgrade'
+          inputs:
+            connectionType: 'Kubernetes Service Connection'
+            kubernetesServiceConnection: 'k8s-s9'
+            namespace: playground
+            command: upgrade
+            releaseName: '$(imageName)'
+            chartName: $(Build.ArtifactStagingDirectory)/$(imageName)-$(version).tgz
+            arguments: >
+              --set environment="Staging"
+              --set ingress.host="gds.sf9.io"
+              --set db="$(dbConnection)"
+
