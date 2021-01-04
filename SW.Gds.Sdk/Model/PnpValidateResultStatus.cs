@@ -1,6 +1,6 @@
 ﻿namespace SW.Gds.Model
 {
-    public enum PnpResultStatus
+    public enum PnpValidateResultStatus
     {
         Ok,
         BadPhone,

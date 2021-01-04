@@ -1,4 +1,5 @@
-﻿using SW.PrimitiveTypes;
+﻿using SW.Gds.Model;
+using SW.PrimitiveTypes;
 using System;
 using System.Collections.Generic;
 using System.Linq;

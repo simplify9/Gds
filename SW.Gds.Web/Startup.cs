@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Text;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
@@ -31,7 +32,12 @@ namespace SW.Gds.Web
             if (Configuration != null) Configuration.GetSection(GdsOptions.ConfigurationSection).Bind(gdsOptions);
             services.AddSingleton(gdsOptions);
 
-            services.AddControllers();
+            services.AddControllers().
+                AddJsonOptions(configure =>
+                {
+                    configure.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+                });
+
 
             services.AddAuthentication().
                 AddJwtBearer(configureOptions =>
@@ -65,8 +71,6 @@ namespace SW.Gds.Web
             });
 
             services.AddScoped<RequestContext>();
-            //services.AddScoped<RetrievalService>();
-            //services.AddScoped<PlaceDb>();
 
             services.AddMemoryCache();
             services.AddHttpClient<ExternalCurrencyRatesService>();
