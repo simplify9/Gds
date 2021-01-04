@@ -98,4 +98,5 @@ stages:
               --set environment="Staging"
               --set ingress.host="gds.sf9.io"
               --set db="$(dbConnection)"
+              --set ingress.enabled=true
 
