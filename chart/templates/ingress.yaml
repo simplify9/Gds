@@ -3,7 +3,7 @@
 {{- $servicePort := .Values.service.port -}}
 {{- $ingressPath := .Values.ingress.path -}}
 
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: {{ $fullName }}
@@ -32,12 +32,13 @@ spec:
 {{- end }}
   rules:
   {{- range .Values.ingress.hosts }}
-    - host: {{ . }} 
-      http:
+    - http:
         paths:
-        - path: {{ $ingressPath }}
-          backend:
-            serviceName: {{ $fullName }}
-            servicePort: http
+          - path: /{{ $ingressPath }}
+            backend:
+              service:
+                name: {{ $fullName }}
+                port:
+                  number: 80
   {{- end }}
 {{- end }}
