@@ -51,8 +51,9 @@ stages:
             publishVstsFeed: 'e5fb2e9c-1207-48a4-8f7b-2e6b32308210'
 
     - job: deploy
-        displayName: build, push image and deploy to playground
-        steps:
+      displayName: build, push image and deploy to playground
+      steps:
+        
         - task: Docker@2
           displayName: Build and push an image to container registry
           condition: eq(variables['Build.SourceBranch'], 'refs/heads/master')
