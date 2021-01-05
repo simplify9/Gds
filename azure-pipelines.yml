@@ -7,8 +7,11 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  imageName: gds
-  version: $[format('1.0.{0}', counter('1.0', 0))]
+  - group: Chartmuseum
+  - name: imageName
+    value: gds
+  - name: version
+    value: $[format('1.0.{0}', counter('1.0', 0))]
 
 stages:
 - stage: Build
