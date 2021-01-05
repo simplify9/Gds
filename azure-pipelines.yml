@@ -7,8 +7,11 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  imageName: gds
-  version: $[format('1.0.{0}', counter('1.0', 0))]
+  - group: Chartmuseum
+  - name: imageName
+    value: gds
+  - name: version
+    value: $[format('1.0.{0}', counter('1.0', 0))]
 
 stages:
 - stage: Build
@@ -43,12 +46,13 @@ stages:
             nobuild: true
             versioningScheme: 'byBuildNumber'
 
-        - task: DotNetCoreCLI@2
-          displayName: 'dotnet push'
-          condition: eq(variables['Build.SourceBranch'], 'refs/heads/master')
+        - task: NuGetCommand@2
+          condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
           inputs:
             command: 'push'
-            publishVstsFeed: 'e5fb2e9c-1207-48a4-8f7b-2e6b32308210'
+            packagesToPush: '$(Build.ArtifactStagingDirectory)/**/*.nupkg;!$(Build.ArtifactStagingDirectory)/**/*.symbols.nupkg'
+            nuGetFeedType: 'external'
+            publishFeedCredentials: 'swnuget' 
 
     - job: deploy
       displayName: build, push image and deploy to playground
@@ -80,10 +84,16 @@ stages:
             arguments: --version $(version) --app-version $(version)
             updatedependency: true
 
-        - task: PublishBuildArtifacts@1
+        - task: Bash@3
+          displayName: 'Upload to chart museum'
           inputs:
-            pathToPublish: $(Build.ArtifactStagingDirectory)/$(imageName)-$(version).tgz
-            artifactName: HelmChart
+            targetType: 'inline'
+            script: |
+              for f in $(Build.ArtifactStagingDirectory)/*.tgz
+              do 
+                echo "Uploading @$f"
+                curl --data-binary "@$f" https://charts.sf9.io/api/charts --user $(CmUser):$(CmPassword)
+              done 
 
         - task: HelmDeploy@0
           displayName: 'helm upgrade'
@@ -93,10 +103,12 @@ stages:
             namespace: playground
             command: upgrade
             releaseName: '$(imageName)'
-            chartName: $(Build.ArtifactStagingDirectory)/$(imageName)-$(version).tgz
+            chartName: '$(imageName)'
+            chartVersion: $(version)
             arguments: >
+              --repo https://charts.sf9.io
               --set environment="Staging"
-              --set ingress.host="gds.sf9.io"
+              --set ingress.hosts={gds.sf9.io}
               --set db="$(dbConnection)"
               --set ingress.enabled=true
 
