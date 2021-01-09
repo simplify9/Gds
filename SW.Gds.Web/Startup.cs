@@ -86,6 +86,7 @@ namespace SW.Gds.Web
                 app.UseDeveloperExceptionPage();
             }
 
+            app.UsePathBase("/gds");
             app.UseRouting();
             app.UseAuthentication();
             app.UseAuthorization();

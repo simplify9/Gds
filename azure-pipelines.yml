@@ -7,8 +7,11 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  imageName: gds
-  version: $[format('1.0.{0}', counter('1.0', 0))]
+  - group: Chartmuseum
+  - name: imageName
+    value: gds
+  - name: version
+    value: $[format('1.0.{0}', counter('1.0', 0))]
 
 stages:
 - stage: Build
@@ -81,10 +84,16 @@ stages:
             arguments: --version $(version) --app-version $(version)
             updatedependency: true
 
-        - task: PublishBuildArtifacts@1
+        - task: Bash@3
+          displayName: 'Upload to chart museum'
           inputs:
-            pathToPublish: $(Build.ArtifactStagingDirectory)/$(imageName)-$(version).tgz
-            artifactName: HelmChart
+            targetType: 'inline'
+            script: |
+              for f in $(Build.ArtifactStagingDirectory)/*.tgz
+              do 
+                echo "Uploading @$f"
+                curl --data-binary "@$f" https://charts.sf9.io/api/charts --user $(CmUser):$(CmPassword)
+              done 
 
         - task: HelmDeploy@0
           displayName: 'helm upgrade'
@@ -94,8 +103,10 @@ stages:
             namespace: playground
             command: upgrade
             releaseName: '$(imageName)'
-            chartName: $(Build.ArtifactStagingDirectory)/$(imageName)-$(version).tgz
+            chartName: '$(imageName)'
+            chartVersion: $(version)
             arguments: >
+              --repo https://charts.sf9.io
               --set environment="Staging"
               --set ingress.hosts={gds.sf9.io}
               --set db="$(dbConnection)"
