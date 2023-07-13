@@ -6,7 +6,6 @@ replicaCount: 1
 
 image:
   pullPolicy: IfNotPresent
-  repo: simplify9
 
 # imagePullSecrets:
 #   - name: sw-secret
